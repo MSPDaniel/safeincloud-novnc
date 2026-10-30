@@ -1,33 +1,43 @@
-# SafeInCloud on Debian 12 + Wine + noVNC
+# SafeInCloud noVNC — Debian/WineHQ build (experimental)
 
-**Experimental build.** This project has not been built or runtime-tested here. No password manager executable, proprietary .NET installers, or password databases are included.
+**Unofficial community project.** Not endorsed by SafeInCloud. Windows SafeInCloud under Wine is not supported by the vendor. Do not trust it with your only password vault until tested and backed up.
 
-## Included
-- Debian 12 base with regular system user/group database (not jlesage)
-- Wine 8 (Debian Bookworm packages, 32- and 64-bit)
-- Microsoft core fonts via `ttf-mscorefonts-installer` (EULA preaccepted for unattended build), plus Liberation/DejaVu/Wine fonts
-- Chromium, Openbox, TigerVNC, noVNC
-- Persistent Wine prefix and app state under `/config`
-- One-time .NET Framework 4.8 install via Winetricks at first startup
+## Changes
 
-## GitHub
-1. Upload all package contents (including `.github/workflows/publish.yml`) to `MSPDaniel/safeincloud-novnc` branch `main`.
-2. Enable Actions, allow workflow to write packages, and run the build.
-3. Set the GHCR package visibility to Public, or authenticate Unraid to GHCR.
-4. Wait for a successful publish before pulling on Unraid.
+- Fix repeated container starts: stale `/tmp/.X1-lock` and X11 socket cleanup when no live Xvnc owns the display.
+- Application crashes no longer stop noVNC; `wait` watches Xvnc only.
+- Install `python3-xdg` for Openbox auto-start warning.
+- WineHQ stable rather than Debian's Wine 8 (version may change with upstream).
+- Microsoft core fonts via Debian `ttf-mscorefonts-installer`.
+- GitHub build-time .NET 4.8 inside a prefix created at `/config/safeincloud/wine`, archived as an image template and seeded into `/config` **only when no prefix exists**. This installation is slow and can fail under Wine; CI fails rather than publishing an incomplete image.
+- Linux Chromium for cloud OAuth browser handoff: `winebrowser` + `xdg-open` integration. **Not yet end-to-end tested**; callback URI schemes and providers may still fail under Wine.
+- Copies the official portable app from read-only `/opt/safeincloud/source` to writable `/config/safeincloud/app` once, preserving the portable `Data` folder.
 
-## Unraid
-1. **Do not delete or overwrite the working SafeInCloud database.** Back it up first. Do not reuse a live Wine prefix simultaneously.
-2. Copy your Windows portable app folder into `/mnt/user/appdata/safeincloud-novnc/source` so the executable is `/mnt/user/appdata/safeincloud-novnc/source/SafeInCloud.exe`.
-3. Import `unraid/safeincloud-novnc.xml` as a local Unraid template, or use `compose.yaml`.
-4. Start container; first start may take a long time while installing .NET 4.8. Check `/mnt/user/appdata/safeincloud-novnc/config/safeincloud/app.log`.
-5. Visit `http://UNRAID-IP:5811/vnc.html?autoconnect=true`.
+## Official application
 
-## Critical notes
-- The HTTP noVNC port has **no built-in authentication**. Restrict to trusted LAN or put behind a correctly configured authenticated reverse proxy (e.g. Authelia); do not expose 5811 directly to the internet.
-- The Wine prefix lives at `/config/safeincloud/wine`. App-specific data in the source mount is **read-only**; if the portable app stores its database alongside the executable, configure/migrate its data path to a persistent writable location under `/config` before use.
-- A working cloud OAuth browser callback is **not yet guaranteed**. Chromium is installed and can be launched from a terminal with `safeincloud-browser`, but Wine-to-Linux browser delegation may need additional configuration.
-- `.NET 4.8` installation may fail under Wine 8; inspect the logs. `INSTALL_DOTNET48=0` skips installation only when using a previously configured prefix.
-- The Microsoft core font installer downloads licensed font files during image build; you accept its EULA when using this image. Microsoft fonts are not bundled in this source archive.
-- Chromium is configured with `--password-store=basic`; do not save passwords in Chromium. Use the SafeInCloud application and protect the persistent `/config` folder.
-- The project does not yet have automated build/runtime verification. It is a starting implementation, not a confirmed working SafeInCloud deployment.
+Get the Windows application only from https://www.safe-in-cloud.com/en/download/ or the developer's verified distribution. The current public Windows link may open Microsoft Store, whose app package is not a portable EXE. **This image does not bundle, scrape, or redistribute the proprietary SafeInCloud app.** If you already have the legitimate portable `SafeInCloud.exe` and companion files, place them in `/mnt/user/appdata/safeincloud-novnc/source/`.
+
+For the official Windows portable edition, `Data/SafeInCloud.db` lives beside the EXE; the container's writable app copy preserves this in `/config/safeincloud/app/Data/`.
+
+## Deployment
+
+1. Back up `/mnt/user/appdata/safeincloud-novnc/config` before changing versions. **Never delete an existing Wine prefix or database to force startup.**
+2. Upload these files to `MSPDaniel/safeincloud-novnc`, enable GitHub Actions, and wait for successful GHCR publication. Make GHCR package public or authenticate Docker to GHCR.
+3. Use the Unraid XML template or `compose.yaml`. Open `http://UNRAID-IP:5811/vnc.html?autoconnect=true`.
+4. For a **new** deployment, build-time .NET template is copied into `/config`. Existing `/config/safeincloud/wine` is deliberately not overwritten. If your old Wine 8 prefix remains, changing to WineHQ stable may trigger prefix migration; back up before testing.
+5. In noVNC, use `xterm` to test `/usr/local/bin/safeincloud-browser https://example.com` if cloud restore doesn't open a browser. The OAuth flow may use a custom callback protocol that needs separate work.
+
+## Diagnostics
+
+```bash
+docker inspect safeincloud-novnc --format '{{.State.Status}} {{.State.ExitCode}} {{.State.OOMKilled}}'
+docker logs --tail 100 safeincloud-novnc
+tail -80 /mnt/user/appdata/safeincloud-novnc/config/safeincloud/{xvnc,openbox,novnc,app}.log
+```
+
+## Important limitations
+
+- This is **source code, not a successfully built or runtime-tested image**. GitHub Actions is the first real Docker build test. `dotnet48` under WineHQ may need additional adjustments.
+- Wine browser integration is a best-effort fix; successful cloud OAuth and callbacks are **not guaranteed**.
+- Avoid exposing port 5811 publicly. Put it behind HTTPS and strong authentication (e.g. Authelia), and restrict network access.
+- Don't store passwords in Chromium. Back up your database and Wine prefix before upgrades.
