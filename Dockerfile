@@ -5,8 +5,11 @@ RUN set -eux; dpkg --add-architecture i386; \
     rm -f /etc/apt/sources.list.d/debian.sources; apt-get update; \
     apt-get install -y --no-install-recommends ca-certificates curl wget gnupg debconf-utils; \
     mkdir -p /usr/share/keyrings; \
-    wget -qO /usr/share/keyrings/winehq-archive.key https://dl.winehq.org/wine-builds/winehq.key; \
-    wget -qO /etc/apt/sources.list.d/winehq-bookworm.sources https://dl.winehq.org/wine-builds/debian/dists/bookworm/winehq-bookworm.sources; \
+    wget -qO /tmp/winehq.key https://dl.winehq.org/wine-builds/winehq.key; \
+    gpg --batch --yes --dearmor -o /usr/share/keyrings/winehq-archive.gpg /tmp/winehq.key; \
+    chmod 644 /usr/share/keyrings/winehq-archive.gpg; \
+    rm -f /tmp/winehq.key; \
+    printf "deb [arch=amd64,i386 signed-by=/usr/share/keyrings/winehq-archive.gpg] https://dl.winehq.org/wine-builds/debian/ bookworm main\n" > /etc/apt/sources.list.d/winehq.list; \
     echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' | debconf-set-selections; \
     apt-get update; \
     apt-get install -y --install-recommends winehq-stable; \
