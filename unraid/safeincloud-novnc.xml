@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>safeincloud-novnc</Name>
+  <Repository>ghcr.io/mspdaniel/safeincloud-novnc:latest</Repository>
+  <Registry>https://ghcr.io</Registry>
+  <Network>bridge</Network>
+  <Shell>bash</Shell>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/MSPDaniel/safeincloud-novnc/issues</Support>
+  <Project>https://github.com/MSPDaniel/safeincloud-novnc</Project>
+  <Overview>SafeInCloud Windows portable application using Wine on Debian 12, accessible through noVNC. Mount your own application files; first startup installs .NET 4.8.</Overview>
+  <WebUI>http://[IP]:[PORT:5800]/vnc.html?autoconnect=true</WebUI>
+  <ExtraParams>--shm-size=256m --memory=3g --pids-limit=512 --security-opt=no-new-privileges:true</ExtraParams>
+  <Config Name="Web UI" Target="5800" Default="5811" Mode="tcp" Description="noVNC web port" Type="Port" Display="always" Required="true">5811</Config>
+  <Config Name="Persistent config" Target="/config" Default="/mnt/user/appdata/safeincloud-novnc/config" Mode="rw" Description="Persistent Wine prefix and SafeInCloud data" Type="Path" Display="always" Required="true">/mnt/user/appdata/safeincloud-novnc/config</Config>
+  <Config Name="SafeInCloud source" Target="/opt/safeincloud/source" Default="/mnt/user/appdata/safeincloud-novnc/source" Mode="ro" Description="Your Windows portable SafeInCloud app files" Type="Path" Display="always" Required="true">/mnt/user/appdata/safeincloud-novnc/source</Config>
+  <Config Name="User ID" Target="USER_ID" Default="99" Mode="" Description="Host file owner UID" Type="Variable" Display="advanced" Required="true">99</Config>
+  <Config Name="Group ID" Target="GROUP_ID" Default="100" Mode="" Description="Host file group GID" Type="Variable" Display="advanced" Required="true">100</Config>
+  <Config Name="Display width" Target="DISPLAY_WIDTH" Default="1440" Mode="" Description="Desktop width" Type="Variable" Display="advanced" Required="true">1440</Config>
+  <Config Name="Display height" Target="DISPLAY_HEIGHT" Default="900" Mode="" Description="Desktop height" Type="Variable" Display="advanced" Required="true">900</Config>
+  <Config Name="Install .NET 4.8" Target="INSTALL_DOTNET48" Default="1" Mode="" Description="Install .NET 4.8 on first run" Type="Variable" Display="advanced" Required="true">1</Config>
+</Container>

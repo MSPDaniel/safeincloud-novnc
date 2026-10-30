@@ -1,0 +1,21 @@
+services:
+  safeincloud-novnc:
+    image: ghcr.io/mspdaniel/safeincloud-novnc:latest
+    container_name: safeincloud-novnc
+    ports:
+      - '5811:5800'
+    environment:
+      USER_ID: '99'
+      GROUP_ID: '100'
+      DISPLAY_WIDTH: '1440'
+      DISPLAY_HEIGHT: '900'
+      INSTALL_DOTNET48: '1'
+    volumes:
+      - /mnt/user/appdata/safeincloud-novnc/config:/config
+      - /mnt/user/appdata/safeincloud-novnc/source:/opt/safeincloud/source:ro
+    shm_size: 256m
+    mem_limit: 3g
+    pids_limit: 512
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
